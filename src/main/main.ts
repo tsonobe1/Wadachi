@@ -43,7 +43,7 @@ const createMainWindow = async (): Promise<BrowserWindow> => {
     height: savedBounds?.height ?? 140,
     x: savedBounds?.x,
     y: savedBounds?.y,
-    title: 'KeyInputViewr',
+    title: 'Wadachi',
     transparent: true,
     frame: false,
     hasShadow: false,
@@ -198,7 +198,7 @@ const handleKeyboardEvent = (event: UiohookKeyboardEvent): void => {
 
 const bootstrap = async (): Promise<void> => {
   if (process.platform === 'win32') {
-    app.setAppUserModelId('dev.keyinput.viewr');
+    app.setAppUserModelId('dev.wadachi.app');
   }
 
   await app.whenReady();

@@ -1,5 +1,5 @@
 {
-  "name": "key-input-viewr",
+  "name": "wadachi",
   "version": "1.0.0",
   "description": "Front-of-screen keystroke overlay for macOS and Windows.",
   "main": "dist/main/main.js",
@@ -43,8 +43,8 @@
     "node": ">=20"
   },
   "build": {
-    "appId": "dev.keyinput.viewr",
-    "productName": "KeyInputViewr",
+    "appId": "dev.wadachi.app",
+    "productName": "Wadachi",
     "directories": {
       "output": "release"
     },

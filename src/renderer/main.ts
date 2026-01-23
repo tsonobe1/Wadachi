@@ -13,7 +13,7 @@ if (!appRoot) {
 appRoot.innerHTML = `
   <div id="overlay" class="overlay is-locked">
     <div class="overlay__status">
-      <span class="overlay__title">KeyInputViewr</span>
+      <span class="overlay__title">Wadachi</span>
       <span id="lock-indicator" class="overlay__lock">Locked</span>
     </div>
     <div id="keystrokes" class="overlay__keystrokes"></div>
