@@ -1,0 +1,12 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "entry": [
+    "src/main/main.ts",
+    "src/preload/index.ts",
+    "src/renderer/main.ts",
+    "src/shared/keyFormatter.ts",
+    "src/shared/preferences.ts"
+  ],
+  "project": ["src/**/*.{ts,tsx}"],
+  "ignore": ["src/renderer/global.d.ts", "src/shared/*.js", "src/shared/*.js.map", "dist/**", "release/**"]
+}

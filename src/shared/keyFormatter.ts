@@ -72,7 +72,7 @@ const KEYCODE_MAP: Record<number, string> = {
   27: ']',
   43: '\\',
   39: ';',
-  40: '\'',
+  40: "'",
   41: '`',
   51: ',',
   52: '.',
@@ -199,10 +199,7 @@ const normalizePlatform = (platform?: NodeJS.Platform | 'browser'): NodeJS.Platf
   return 'browser';
 };
 
-export const formatKeystroke = (
-  event: KeyEventLike,
-  options?: FormatOptions
-): KeystrokePayload => {
+export const formatKeystroke = (event: KeyEventLike, options?: FormatOptions): KeystrokePayload => {
   const platform = normalizePlatform(options?.platform);
   const keys: string[] = [];
 

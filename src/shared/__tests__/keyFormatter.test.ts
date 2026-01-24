@@ -2,12 +2,12 @@ import { describe, it, expect } from 'vitest';
 import { formatKeystroke } from '../keyFormatter';
 
 describe('formatKeystroke', () => {
-  it('formats simple keys', () => {
+  it('単純なキーをフォーマットする', () => {
     const formatted = formatKeystroke({ keycode: 30 });
     expect(formatted.label).toBe('A');
   });
 
-  it('concatenates modifiers in order', () => {
+  it('修飾キーを順序通りに連結する', () => {
     const formatted = formatKeystroke({
       keycode: 3,
       ctrlKey: true,
@@ -18,7 +18,7 @@ describe('formatKeystroke', () => {
     expect(formatted.label).toBe('Ctrl + Shift + 2');
   });
 
-  it('prefers Option label on macOS style platform', () => {
+  it('macOSプラットフォームではOptionラベルを優先する', () => {
     const formatted = formatKeystroke(
       {
         keycode: 30,

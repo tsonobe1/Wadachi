@@ -3,15 +3,12 @@
   "compilerOptions": {
     "module": "ESNext",
     "outDir": "dist/renderer",
-    "rootDir": "src/renderer",
+    "rootDir": "src",
     "lib": ["ES2022", "DOM"],
     "moduleResolution": "Bundler",
-    "types": ["vite/client"],
+    "types": ["vite/client", "node"],
     "sourceMap": true
   },
-  "include": [
-    "src/renderer/**/*.ts",
-    "src/renderer/**/*.d.ts"
-  ],
+  "include": ["src/renderer/**/*.ts", "src/renderer/**/*.d.ts"],
   "exclude": ["node_modules"]
 }

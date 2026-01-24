@@ -1,23 +1,13 @@
 import path from 'node:path';
-import {
-  app,
-  BrowserWindow,
-  globalShortcut,
-  ipcMain
-} from 'electron';
+import { app, BrowserWindow, dialog, globalShortcut, ipcMain, screen } from 'electron';
+import type { Rectangle } from 'electron';
 import Store from 'electron-store';
-import {
-  uIOhook,
-  type UiohookKeyboardEvent
-} from 'uiohook-napi';
-import {
-  addTimestamp,
-  formatKeystroke,
-  type KeystrokePayload
-} from '../shared/keyFormatter';
+import { uIOhook, type UiohookKeyboardEvent } from 'uiohook-napi';
+import { addTimestamp, formatKeystroke, type KeystrokePayload } from '../shared/keyFormatter';
 import {
   defaultPreferences,
   type AppPreferences,
+  type Hotkeys,
   type WindowBounds
 } from '../shared/preferences';
 
@@ -34,15 +24,24 @@ const store = new Store<AppPreferences>({
 
 let mainWindow: BrowserWindow | null = null;
 let boundsDebounce: NodeJS.Timeout | null = null;
+const DEFAULT_BOUNDS: Pick<WindowBounds, 'width' | 'height'> = {
+  width: 640,
+  height: 140
+};
+type HotkeyName = keyof Hotkeys;
+const HOTKEY_FALLBACKS: Record<HotkeyName, string> = {
+  toggleVisibility: defaultPreferences.hotkeys.toggleVisibility,
+  toggleLock: defaultPreferences.hotkeys.toggleLock
+};
 
 const createMainWindow = async (): Promise<BrowserWindow> => {
-  const savedBounds = store.get('windowBounds');
+  const initialBounds = resolveInitialBounds();
 
   mainWindow = new BrowserWindow({
-    width: savedBounds?.width ?? 640,
-    height: savedBounds?.height ?? 140,
-    x: savedBounds?.x,
-    y: savedBounds?.y,
+    width: initialBounds.width,
+    height: initialBounds.height,
+    x: initialBounds.x,
+    y: initialBounds.y,
     title: 'Wadachi',
     transparent: true,
     frame: false,
@@ -158,16 +157,30 @@ const registerIpcHandlers = (): void => {
 };
 
 const registerShortcuts = (): void => {
-  const { toggleVisibility, toggleLock } = store.get('hotkeys');
-  registerShortcut(toggleVisibility, toggleWindowVisibility);
-  registerShortcut(toggleLock, toggleLockState);
+  const currentHotkeys = store.get('hotkeys');
+  const resolvedVisibility = ensureShortcut(
+    'toggleVisibility',
+    currentHotkeys.toggleVisibility,
+    toggleWindowVisibility
+  );
+  const resolvedLock = ensureShortcut('toggleLock', currentHotkeys.toggleLock, toggleLockState);
+
+  if (resolvedVisibility !== currentHotkeys.toggleVisibility || resolvedLock !== currentHotkeys.toggleLock) {
+    store.set('hotkeys', {
+      ...currentHotkeys,
+      toggleVisibility: resolvedVisibility,
+      toggleLock: resolvedLock
+    });
+    broadcastPreferences();
+  }
 };
 
-const registerShortcut = (accelerator: string, handler: () => void): void => {
+const registerShortcut = (accelerator: string, handler: () => void): boolean => {
   const registered = globalShortcut.register(accelerator, handler);
   if (!registered) {
     console.warn(`Failed to register shortcut: ${accelerator}`);
   }
+  return registered;
 };
 
 const startInputHook = (): void => {
@@ -219,13 +232,96 @@ bootstrap().catch((error) => {
   app.quit();
 });
 
-  app.on('will-quit', () => {
-    globalShortcut.unregisterAll();
-    stopInputHook();
-  });
+app.on('will-quit', () => {
+  globalShortcut.unregisterAll();
+  stopInputHook();
+});
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit();
   }
 });
+
+const resolveInitialBounds = (): Partial<WindowBounds> & Pick<WindowBounds, 'width' | 'height'> => {
+  const validated = getValidatedBounds();
+  if (validated) {
+    return validated;
+  }
+
+  return {
+    width: DEFAULT_BOUNDS.width,
+    height: DEFAULT_BOUNDS.height
+  };
+};
+
+const getValidatedBounds = (): WindowBounds | null => {
+  const savedBounds = store.get('windowBounds');
+  if (!savedBounds || !isValidBounds(savedBounds)) {
+    return null;
+  }
+
+  const displays = screen.getAllDisplays();
+  const intersects = displays.some((display) => rectanglesIntersect(savedBounds, display.workArea));
+  return intersects ? savedBounds : null;
+};
+
+const isValidBounds = (bounds: WindowBounds): boolean =>
+  [bounds.x, bounds.y, bounds.width, bounds.height].every((value) => Number.isFinite(value));
+
+const rectanglesIntersect = (windowBounds: WindowBounds, displayArea: Rectangle): boolean => {
+  const windowRight = windowBounds.x + windowBounds.width;
+  const windowBottom = windowBounds.y + windowBounds.height;
+  const displayRight = displayArea.x + displayArea.width;
+  const displayBottom = displayArea.y + displayArea.height;
+
+  return (
+    windowBounds.x < displayRight &&
+    windowRight > displayArea.x &&
+    windowBounds.y < displayBottom &&
+    windowBottom > displayArea.y
+  );
+};
+
+const ensureShortcut = (name: HotkeyName, accelerator: string, handler: () => void): string => {
+  if (registerShortcut(accelerator, handler)) {
+    return accelerator;
+  }
+
+  const fallback = HOTKEY_FALLBACKS[name];
+  if (accelerator !== fallback && registerShortcut(fallback, handler)) {
+    notifyShortcutFallback(accelerator, fallback);
+    return fallback;
+  }
+
+  handleShortcutFailure(accelerator);
+  return accelerator;
+};
+
+const notifyShortcutFallback = (original: string, fallback: string): void => {
+  void dialog.showMessageBox({
+    type: 'warning',
+    title: 'ショートカットを初期値に戻しました',
+    message: `ホットキー「${original}」を登録できなかったため、既定値「${fallback}」に戻しました。`
+  });
+};
+
+const handleShortcutFailure = (accelerator: string): void => {
+  dialog.showErrorBox(
+    'ショートカットを登録できませんでした',
+    `ホットキー「${accelerator}」を登録できませんでした。ウィンドウを操作できるようロックを解除しました。設定を見直してください。`
+  );
+  forceUnlockOverlay();
+};
+
+const forceUnlockOverlay = (): void => {
+  if (!store.get('overlayLocked')) {
+    return;
+  }
+
+  store.set('overlayLocked', false);
+  applyLockState();
+  broadcastLockState();
+  mainWindow?.show();
+  mainWindow?.focus();
+};

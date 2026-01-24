@@ -47,7 +47,10 @@ const setLocked = (locked: boolean): void => {
 const applyPreferences = (prefs: AppPreferences): void => {
   document.documentElement.style.setProperty('--accent-color', prefs.appearance.accentColor);
   document.documentElement.style.setProperty('--overlay-font-size', `${prefs.appearance.fontSizePx}px`);
-  document.documentElement.style.setProperty('--overlay-bg-opacity', prefs.appearance.backgroundOpacity.toString());
+  document.documentElement.style.setProperty(
+    '--overlay-bg-opacity',
+    prefs.appearance.backgroundOpacity.toString()
+  );
   hotkeyHintEl.textContent = `Show/Hide: ${prefs.hotkeys.toggleVisibility} | Lock: ${prefs.hotkeys.toggleLock}`;
 };
 
@@ -56,12 +59,33 @@ const handleKeystroke = (stroke: TimedKeystroke): void => {
   renderKeystrokes();
 };
 
-window.overlay.onKeystroke(handleKeystroke);
-window.overlay.onLockState(setLocked);
-window.overlay.onPreferences(applyPreferences);
+const teardownCallbacks: Array<() => void> = [];
+teardownCallbacks.push(window.overlay.onKeystroke(handleKeystroke));
+teardownCallbacks.push(window.overlay.onLockState(setLocked));
+teardownCallbacks.push(window.overlay.onPreferences(applyPreferences));
 window.overlay
   .getPreferences()
   .then(applyPreferences)
   .catch((error) => console.error('Failed to load preferences', error));
 
-setInterval(renderKeystrokes, 200);
+const renderInterval = window.setInterval(renderKeystrokes, 200);
+let cleanedUp = false;
+const cleanup = (): void => {
+  if (cleanedUp) {
+    return;
+  }
+
+  cleanedUp = true;
+  while (teardownCallbacks.length > 0) {
+    const dispose = teardownCallbacks.pop();
+    dispose?.();
+  }
+  window.clearInterval(renderInterval);
+};
+
+window.addEventListener('beforeunload', cleanup);
+
+if (import.meta.hot) {
+  import.meta.hot.accept(() => {});
+  import.meta.hot.dispose(cleanup);
+}

@@ -17,9 +17,11 @@
     "build:preload": "tsc -p tsconfig.preload.json",
     "build:renderer": "vite build",
     "lint": "tsc --noEmit -p tsconfig.main.json && tsc --noEmit -p tsconfig.preload.json && tsc --noEmit -p tsconfig.renderer.json",
+    "format": "prettier --write .",
     "test": "vitest run",
     "test:watch": "vitest watch",
-    "package": "pnpm build && electron-builder"
+    "package": "pnpm build && electron-builder",
+    "knip": "knip"
   },
   "keywords": [],
   "author": "",
@@ -77,6 +79,8 @@
     "electron": "^40.0.0",
     "electron-builder": "^26.4.0",
     "jsdom": "^27.4.0",
+    "knip": "^5.82.1",
+    "prettier": "^3.8.1",
     "rimraf": "^6.1.2",
     "typescript": "^5.9.3",
     "vite": "^7.3.1",
