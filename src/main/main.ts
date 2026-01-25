@@ -10,6 +10,7 @@ import {
   type Hotkeys,
   type WindowBounds
 } from '../shared/preferences';
+import { safeRegisterShortcut } from './hotkeySafety';
 
 const CHANNELS = {
   keystroke: 'overlay:keystroke',
@@ -175,13 +176,8 @@ const registerShortcuts = (): void => {
   }
 };
 
-const registerShortcut = (accelerator: string, handler: () => void): boolean => {
-  const registered = globalShortcut.register(accelerator, handler);
-  if (!registered) {
-    console.warn(`Failed to register shortcut: ${accelerator}`);
-  }
-  return registered;
-};
+const registerShortcut = (accelerator: unknown, handler: () => void): boolean =>
+  safeRegisterShortcut(accelerator, handler, globalShortcut.register.bind(globalShortcut));
 
 const startInputHook = (): void => {
   uIOhook.on('keydown', handleKeyboardEvent);
@@ -283,19 +279,28 @@ const rectanglesIntersect = (windowBounds: WindowBounds, displayArea: Rectangle)
   );
 };
 
-const ensureShortcut = (name: HotkeyName, accelerator: string, handler: () => void): string => {
-  if (registerShortcut(accelerator, handler)) {
-    return accelerator;
+const describeAccelerator = (value: unknown): string => {
+  if (typeof value !== 'string') {
+    return '未設定';
+  }
+
+  return value.trim().length > 0 ? value : '未設定';
+};
+
+const ensureShortcut = (name: HotkeyName, accelerator: unknown, handler: () => void): string => {
+  const normalized = typeof accelerator === 'string' ? accelerator : '';
+  if (registerShortcut(normalized, handler)) {
+    return normalized;
   }
 
   const fallback = HOTKEY_FALLBACKS[name];
-  if (accelerator !== fallback && registerShortcut(fallback, handler)) {
-    notifyShortcutFallback(accelerator, fallback);
+  if (normalized !== fallback && registerShortcut(fallback, handler)) {
+    notifyShortcutFallback(describeAccelerator(accelerator), fallback);
     return fallback;
   }
 
-  handleShortcutFailure(accelerator);
-  return accelerator;
+  handleShortcutFailure(describeAccelerator(accelerator));
+  return normalized;
 };
 
 const notifyShortcutFallback = (original: string, fallback: string): void => {
