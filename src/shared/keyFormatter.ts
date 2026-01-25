@@ -15,8 +15,22 @@ export interface KeystrokePayload {
 
 export type TimedKeystroke = KeystrokePayload & { timestamp: number };
 
+type NativePlatform =
+  | 'aix'
+  | 'android'
+  | 'darwin'
+  | 'freebsd'
+  | 'haiku'
+  | 'linux'
+  | 'openbsd'
+  | 'sunos'
+  | 'win32'
+  | 'cygwin';
+
+type Platform = NativePlatform | 'browser' | string;
+
 export interface FormatOptions {
-  platform?: NodeJS.Platform | 'browser';
+  platform?: Platform;
 }
 
 const KEYCODE_MAP: Record<number, string> = {
@@ -166,7 +180,7 @@ const MODIFIER_KEYCODES: Partial<Record<number, keyof KeyEventLike>> = {
   3676: 'metaKey'
 };
 
-const MODIFIERS: Array<{ key: keyof KeyEventLike; label(platform: NodeJS.Platform | 'browser'): string }> = [
+const MODIFIERS: Array<{ key: keyof KeyEventLike; label(platform: Platform): string }> = [
   {
     key: 'ctrlKey',
     label: () => 'Ctrl'
@@ -187,16 +201,17 @@ const MODIFIERS: Array<{ key: keyof KeyEventLike; label(platform: NodeJS.Platfor
 
 const KEY_DELIMITER = ' + ';
 
-const normalizePlatform = (platform?: NodeJS.Platform | 'browser'): NodeJS.Platform | 'browser' => {
+const detectProcessPlatform = (): Platform | null => {
+  const candidate = (globalThis as { process?: { platform?: string } }).process?.platform;
+  return typeof candidate === 'string' ? (candidate as Platform) : null;
+};
+
+const normalizePlatform = (platform?: Platform): Platform => {
   if (platform) {
     return platform;
   }
 
-  if (typeof process !== 'undefined' && process.platform) {
-    return process.platform;
-  }
-
-  return 'browser';
+  return detectProcessPlatform() ?? 'browser';
 };
 
 export const formatKeystroke = (event: KeyEventLike, options?: FormatOptions): KeystrokePayload => {

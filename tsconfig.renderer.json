@@ -6,7 +6,7 @@
     "rootDir": "src",
     "lib": ["ES2022", "DOM"],
     "moduleResolution": "Bundler",
-    "types": ["vite/client", "node"],
+    "types": ["vite/client"],
     "sourceMap": true
   },
   "include": ["src/renderer/**/*.ts", "src/renderer/**/*.d.ts"],
