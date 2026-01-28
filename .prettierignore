@@ -1,0 +1,12 @@
+dist/
+release/
+node_modules/
+pnpm-lock.yaml
+AGENTS.md
+docs/**
+src/shared/*.js
+src/shared/*.js.map
+src/shared/*.d.ts.map
+*.log
+coverage/
+build/

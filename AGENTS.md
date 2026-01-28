@@ -1,0 +1,4 @@
+- test は vitest で書くこと
+- test は古典学派の手法を採用すること
+- testケースは日本語で書くこと
+- 作業後はpnpm lint, pnpm format, pnpm knipを実行し、その結果問題があれば直すこと

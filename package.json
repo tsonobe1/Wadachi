@@ -1,0 +1,90 @@
+{
+  "name": "wadachi",
+  "version": "1.0.0",
+  "description": "Front-of-screen keystroke overlay for macOS and Windows.",
+  "main": "dist/main/main.js",
+  "type": "commonjs",
+  "scripts": {
+    "clean": "rimraf dist",
+    "dev": "concurrently -k \"pnpm dev:renderer\" \"pnpm dev:compile\" \"pnpm dev:electron\"",
+    "dev:renderer": "vite dev",
+    "dev:compile": "concurrently -k \"pnpm watch:main\" \"pnpm watch:preload\"",
+    "watch:main": "tsc -p tsconfig.main.json --watch --preserveWatchOutput",
+    "watch:preload": "tsc -p tsconfig.preload.json --watch --preserveWatchOutput",
+    "dev:electron": "wait-on tcp:5173 dist/main/main.js dist/preload/index.js && cross-env VITE_DEV_SERVER_URL=http://localhost:5173 electron dist/main/main.js",
+    "build": "pnpm clean && pnpm build:main && pnpm build:preload && pnpm build:renderer",
+    "build:main": "tsc -p tsconfig.main.json",
+    "build:preload": "tsc -p tsconfig.preload.json",
+    "build:renderer": "vite build",
+    "lint": "tsc --noEmit -p tsconfig.main.json && tsc --noEmit -p tsconfig.preload.json && tsc --noEmit -p tsconfig.renderer.json",
+    "format": "prettier --write .",
+    "test": "vitest run",
+    "test:watch": "vitest watch",
+    "package": "pnpm build && electron-builder",
+    "knip": "knip"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.28.0",
+  "pnpm": {
+    "allowedBuiltDependencies": [
+      "electron",
+      "electron-winstaller",
+      "esbuild",
+      "uiohook-napi"
+    ],
+    "onlyBuiltDependencies": [
+      "electron",
+      "electron-winstaller",
+      "esbuild",
+      "uiohook-napi"
+    ]
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "build": {
+    "appId": "dev.wadachi.app",
+    "productName": "Wadachi",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "package.json"
+    ],
+    "mac": {
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "category": "public.app-category.utilities"
+    },
+    "win": {
+      "target": [
+        "nsis",
+        "zip"
+      ]
+    }
+  },
+  "dependencies": {
+    "electron-store": "^11.0.2",
+    "uiohook-napi": "^1.5.3"
+  },
+  "devDependencies": {
+    "@types/node": "^25.0.10",
+    "concurrently": "^9.2.1",
+    "cross-env": "^10.1.0",
+    "electron": "^40.0.0",
+    "electron-builder": "^26.4.0",
+    "jsdom": "^27.4.0",
+    "knip": "^5.82.1",
+    "prettier": "^3.8.1",
+    "rimraf": "^6.1.2",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.1",
+    "vitest": "^4.0.18",
+    "wait-on": "^9.0.3"
+  }
+}
